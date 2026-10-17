@@ -1,4 +1,8 @@
 # Roadmap
+- [ ] Admin gifts: repair creation, fixed/percentage discounts, editable username recipient lookup and branded delivery
+- [ ] Badges: keep admin navigation in portal, normalize website links and suggest editable artwork accent colors
+- [ ] Issued credentials: hidden-by-default awards, linked issuer attribution, recipient mark/badge controls and email notices
+- [ ] Developer issuance: authorized organization-owned badges, certificates/diplomas and idempotent username-based integration
 - [x] Database connection + app secrets
 - [x] P1 AddComponentModal search + socials
 - [x] P2 Live integrations in hub
