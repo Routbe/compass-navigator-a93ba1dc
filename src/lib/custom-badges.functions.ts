@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth/middleware";
+import { normalizeBadgeWebsite } from "./badge-editor-rules";
 
 /** Super Admin: eigen badges beheren. Elke call controleert de admin-rol server-side. */
 async function guard(userId: string) {
@@ -20,7 +21,7 @@ const details = {
   motto: opt(80),
   story: opt(1000),
   issuerName: opt(80),
-  issuerUrl: z.string().trim().max(300).regex(/^https:\/\//).nullable().optional().or(z.literal("")).transform((v) => (v ? v : null)),
+  issuerUrl: z.preprocess((v) => normalizeBadgeWebsite(v), z.string().url().max(300).nullable()),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional().or(z.literal("")).transform((v) => (v ? v : null)),
 };
 

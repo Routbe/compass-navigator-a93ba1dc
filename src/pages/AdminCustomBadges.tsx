@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { normalizeBadgeWebsite, suggestBadgeAccent } from "@/lib/badge-editor-rules";
 import { BadgeClaimLinks } from "@/components/admin/BadgeClaimLinks";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -138,7 +141,10 @@ function BadgeForm({ initial, onSaved, onCancel }: { initial?: Badge; onSaved: (
               setUploading(true);
               const res = await upload({ data: { base64: await fileToBase64(file) } }).catch(() => null);
               setUploading(false);
-              if (res?.ok) set("imageUrl", res.url);
+              if (res?.ok) {
+                const accent = await suggestBadgeAccent(file).catch(() => null);
+                setD(current => ({ ...current, imageUrl: res.url, accentColor: accent ?? current.accentColor }));
+              }
               else toast.error(res && !res.ok ? res.message : "Upload mislukt");
             }}
           />
@@ -183,8 +189,8 @@ function BadgeForm({ initial, onSaved, onCancel }: { initial?: Badge; onSaved: (
             <Input id="cb-issuer" value={d.issuerName ?? ""} onChange={(e) => set("issuerName", txt(e.target.value))} maxLength={80} placeholder="ROUT" />
           </div>
           <div>
-            <Label htmlFor="cb-url">Link uitgever (https)</Label>
-            <Input id="cb-url" type="url" value={d.issuerUrl ?? ""} onChange={(e) => set("issuerUrl", txt(e.target.value))} maxLength={300} placeholder="https://" pattern="https://.*" />
+            <Label htmlFor="cb-url">Website</Label>
+            <Input id="cb-url" value={d.issuerUrl ?? ""} onChange={(e) => set("issuerUrl", txt(e.target.value))} onBlur={() => { try { set("issuerUrl", normalizeBadgeWebsite(d.issuerUrl)); } catch { toast.error("Controleer het websiteadres"); } }} maxLength={300} placeholder="familie.be" />
           </div>
         </div>
       </div>
@@ -296,7 +302,8 @@ export default function AdminCustomBadges() {
   const current = badges.find((b) => b.id === selected) ?? null;
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-8 px-6 py-10">
+    <AppLayout title="Wapenschilden & badges" crumbs={[{ label: "Beheer", to: "/admin" }, { label: "Wapenschilden & badges" }]}>
+    <div className="w-full space-y-8">
       <header>
         <h1 className="font-display text-3xl tracking-tight">Eigen badges</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -328,6 +335,7 @@ export default function AdminCustomBadges() {
         </>
       )}
     </div>
+    </AppLayout>
   );
 }
 
@@ -352,7 +360,7 @@ export function UserCustomBadgesCard() {
     <section className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-medium">Eigen badges per gebruiker</h2>
-        <a href="/admin/custom-badges" className="text-sm underline">Alle eigen badges beheren</a>
+        <Link to="/admin/custom-badges" className="text-sm underline">Alle eigen badges beheren</Link>
       </div>
       <UserSearch onPick={setUser} />
       {user && (
