@@ -23,6 +23,28 @@ export default defineConfig({
     ...(ignoreRoutes ? { router: { routeFileIgnorePattern: ignoreRoutes } } : {}),
   },
   vite: {
+    // Browser-only vendor splitting (the server bundle is left alone): stable,
+    // separately cached chunks keep the app chunk small.
+    environments: {
+      client: {
+        build: {
+          rollupOptions: {
+            output: {
+              manualChunks(id: string) {
+                if (!id.includes("node_modules")) return undefined;
+                if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "vendor-react";
+                if (id.includes("@tanstack")) return "vendor-tanstack";
+                if (id.includes("@radix-ui")) return "vendor-radix";
+                if (/recharts|d3-/.test(id)) return "vendor-charts";
+                if (/shiki|streamdown|mermaid|katex/.test(id)) return "vendor-markdown";
+                if (/qr-code-styling|qrcode/.test(id)) return "vendor-qr";
+                return undefined;
+              },
+            },
+          },
+        },
+      },
+    },
     plugins: [
       // Offline app shell. The worker is generated (never hand-written) and is
       // registered only from src/lib/pwa.ts, which refuses dev and preview.
