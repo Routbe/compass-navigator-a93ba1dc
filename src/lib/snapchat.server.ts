@@ -3,11 +3,13 @@
  * Bitmoji Kit for the avatar. No Snap Map / location — Snap offers none.
  *
  * Flow: /api/snapchat/start → Snap consent → /api/public/snapchat/callback.
- * Env: SNAPCHAT_CLIENT_ID, SNAPCHAT_CLIENT_SECRET, PUBLIC_SITE_URL.
+ * Env: SNAPCHAT_CLIENT_ID, SNAPCHAT_CLIENT_SECRET.
+ * The redirect URI is always the one registered in Snap Kit (SITE_ORIGIN), never the
+ * request/preview host: Snap rejects any URI that is not an exact match.
  */
 import { createHmac, timingSafeEqual } from "crypto";
 import { sql } from "@/lib/neon";
-import { resolveOrigin } from "@/lib/spotify-presence.server";
+import { SITE_ORIGIN } from "@/lib/site";
 
 const SCOPES = [
   "https://auth.snapchat.com/oauth2/api/user.display_name",
@@ -21,10 +23,11 @@ export function snapchatConfigured(): boolean {
   return Boolean(process.env["SNAPCHAT_CLIENT_ID"] && process.env["SNAPCHAT_CLIENT_SECRET"]);
 }
 
-export function snapchatRedirectUri(origin?: Request | string): string {
-  const resolved = resolveOrigin(origin);
-  const base = /(^|\.)rout\.be$/i.test(new URL(resolved).hostname) ? "https://rout.be" : resolved;
-  return `${base}/api/public/snapchat/callback`;
+export const SNAPCHAT_REDIRECT_URI = `${SITE_ORIGIN}/api/public/snapchat/callback`;
+
+/** Fixed, registered callback. The argument is ignored on purpose (kept for call-site compatibility). */
+export function snapchatRedirectUri(_origin?: Request | string): string {
+  return SNAPCHAT_REDIRECT_URI;
 }
 
 const mac = (p: string) => createHmac("sha256", process.env["SNAPCHAT_CLIENT_SECRET"]!).update(p).digest("hex").slice(0, 32);
@@ -53,7 +56,10 @@ export function snapchatAuthorizeUrl(userId: string, origin?: Request | string):
     scope: SCOPES,
     state: signSnapState(userId),
   });
-  return `https://accounts.snapchat.com/accounts/oauth2/auth?${p}`;
+  const url = `https://accounts.snapchat.com/accounts/oauth2/auth?${p}`;
+  // Non-sensitive diagnostics: the state (signed user id) is never logged.
+  console.info("[snapchat] authorize", { redirect_uri: SNAPCHAT_REDIRECT_URI, scope: SCOPES, client_id_set: true });
+  return url;
 }
 
 export function isBitmojiUrl(url: string): boolean {

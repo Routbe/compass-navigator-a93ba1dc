@@ -177,7 +177,7 @@ Register the webhook once with `TELEGRAM_BOT_TOKEN=... bun scripts/telegram-set-
 
 ## Snapchat (Snap Kit)
 
-- `SNAPCHAT_CLIENT_ID`, `SNAPCHAT_CLIENT_SECRET` — Snap Kit Login Kit + Bitmoji Kit. Redirect URI: `<site>/api/public/snapchat/callback`. No location/Snap Map is ever used.
+- `SNAPCHAT_CLIENT_ID`, `SNAPCHAT_CLIENT_SECRET` — Snap Kit Login Kit + Bitmoji Kit. Redirect URI is fixed to `https://rout.be/api/public/snapchat/callback` (from `SITE_ORIGIN`, never the request host); register exactly that in Snap Kit. No location/Snap Map is ever used.
 
 ## Deployment mode (admin split)
 
