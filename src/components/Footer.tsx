@@ -72,15 +72,15 @@ export function Footer() {
           <span>© ROUT</span>
           <span aria-hidden>•</span>
           <Link to="/privacy" className="hover:text-foreground">
-            Privacy
+            {t("auth.footer.privacy")}
           </Link>
           <span aria-hidden>•</span>
           <Link to="/terms" className="hover:text-foreground">
-            Terms
+            {t("auth.footer.terms")}
           </Link>
           <span aria-hidden>•</span>
           <Link to="/data-deletion" className="hover:text-foreground">
-            Data deletion
+            {t("auth.footer.deletion")}
           </Link>
         </div>
       </footer>

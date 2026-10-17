@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { Fingerprint, Loader2, Plus, ShieldAlert, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,10 +24,8 @@ interface PasskeyRow {
   last_used_at: string | null;
 }
 
-const fmt = (value: string | null) =>
-  value
-    ? new Date(value).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
-    : "never";
+const fmt = (value: string | null, locale: string, never: string) =>
+  value ? new Date(value).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" }) : never;
 
 /** Turns any thrown value into a readable "message (code · HTTP 500)" string. */
 function describe(err: unknown, fallback: string): string {
@@ -44,7 +43,7 @@ function mostRecentlyUsedId(rows: PasskeyRow[]): string | null {
   let best: PasskeyRow | null = null;
   for (const row of rows) {
     if (!row.last_used_at) continue;
-    if (!best || new Date(row.last_used_at) > new Date(best.last_used_at!)) best = row;
+    if (!best || new Date(row.last_used_at) > new Date(best.last_used_at ?? best.created_at)) best = row;
   }
   return best?.id ?? null;
 }
@@ -54,6 +53,7 @@ function mostRecentlyUsedId(rows: PasskeyRow[]): string | null {
  * to the account. Deletes are RLS-scoped to the owner server-side.
  */
 export function PasskeysPanel() {
+  const { t, locale } = useI18n();
   const [keys, setKeys] = useState<PasskeyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
@@ -72,11 +72,11 @@ export function PasskeysPanel() {
       setError(null);
     } catch (err) {
       console.error("[passkeys] list failed", err);
-      setError(describe(err, "Could not load your passkeys."));
+      setError(describe(err, t("auth.settings.passkeys.loadError")));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void refresh();
@@ -84,7 +84,7 @@ export function PasskeysPanel() {
 
   const add = async () => {
     if (!supported) {
-      toast.error("This device or browser does not support passkeys.");
+      toast.error(t("auth.settings.passkeys.unsupported"));
       return;
     }
     setRegistering(true);
@@ -92,16 +92,16 @@ export function PasskeysPanel() {
     try {
       const result = await addPasskey(deviceLabelFrom(navigator.userAgent));
       if (!result.ok) {
-        setError(result.reason ?? "This passkey could not be registered.");
-        toast.error(result.reason ?? "This passkey could not be registered.");
+        setError(result.reason ?? t("auth.settings.passkeys.registerError"));
+        toast.error(result.reason ?? t("auth.settings.passkeys.registerError"));
         return;
       }
-      toast.success("Passkey added");
+      toast.success(t("auth.settings.passkeys.added"));
       await refresh();
     } catch (err) {
       console.error("[passkeys] registration failed", err);
       const name = (err as { name?: string }).name;
-      const message = passkeyErrorMessage(name, null, describe(err, "Something went wrong adding this passkey."));
+      const message = passkeyErrorMessage(name, null, describe(err, t("auth.settings.passkeys.addError")));
       setError(message);
       toast.error(message);
     } finally {
@@ -113,12 +113,12 @@ export function PasskeysPanel() {
     setRemoving(row.id);
     try {
       const res = await deletePasskey({ data: { id: row.id } });
-      if (!res.ok) throw new Error("Delete was refused.");
+      if (!res.ok) throw new Error(t("auth.settings.passkeys.deleteRefused"));
       setKeys((rows) => rows.filter((r) => r.id !== row.id));
-      toast.success("Passkey removed");
+      toast.success(t("auth.settings.passkeys.removed"));
     } catch (err) {
       console.error("[passkeys] delete failed", err);
-      toast.error(describe(err, "Could not remove that passkey."));
+      toast.error(describe(err, t("auth.settings.passkeys.removeError")));
     } finally {
       setRemoving(null);
       setPendingDelete(null);
@@ -131,7 +131,7 @@ export function PasskeysPanel() {
     <section className="mt-4 space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-lg font-medium">
-          <Fingerprint className="h-4 w-4" /> Passkeys
+          <Fingerprint className="h-4 w-4" /> {t("auth.settings.passkeys.title")}
         </h2>
         <Button onClick={add} disabled={registering || !supported} className="h-10 gap-2">
           {registering ? (
@@ -139,19 +139,17 @@ export function PasskeysPanel() {
           ) : (
             <Plus className="h-4 w-4" aria-hidden />
           )}
-          {registering ? "Registering…" : "Add a passkey"}
+          {registering ? t("auth.settings.passkeys.registering") : t("auth.settings.passkeys.add")}
         </Button>
       </div>
       <p className="text-sm text-muted-foreground">
-        Sign in with Face ID, Touch ID, Windows Hello or a security key — no e-mail round trip.
+        {t("auth.settings.passkeys.description")}
       </p>
 
       {!supported ? (
         <p className="flex items-start gap-2 rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-          This browser or device doesn&apos;t support passkeys. Try a recent version of Safari,
-          Chrome, Edge or Firefox on a device with a screen lock — your e-mail link and 6-digit code
-          keep working everywhere.
+          {t("auth.settings.passkeys.help")}
         </p>
       ) : null}
 
@@ -164,11 +162,11 @@ export function PasskeysPanel() {
       <div aria-live="polite">
         {loading ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading passkeys…
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {t("auth.settings.passkeys.loading")}
           </p>
         ) : keys.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground">
-            No passkeys registered yet.
+            {t("auth.settings.passkeys.empty")}
           </p>
         ) : (
           <ul className="divide-y divide-border rounded-xl border border-border">
@@ -176,15 +174,15 @@ export function PasskeysPanel() {
               <li key={key.id} className="flex items-center justify-between gap-3 p-3">
                 <div className="min-w-0">
                   <p className="flex items-center gap-2 truncate text-sm font-medium text-foreground">
-                    {key.device_label || "Passkey"}
+                    {key.device_label || t("auth.settings.passkeys.name")}
                     {key.id === recentId ? (
                       <span className="shrink-0 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                        Most recent
+                        {t("auth.settings.passkeys.recent")}
                       </span>
                     ) : null}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Added {fmt(key.created_at)} · last used {fmt(key.last_used_at)}
+                    {t("auth.settings.passkeys.dates", { created: fmt(key.created_at, locale, t("auth.settings.passkeys.never")), used: fmt(key.last_used_at, locale, t("auth.settings.passkeys.never")) })}
                   </p>
                 </div>
                 <Button
@@ -193,14 +191,14 @@ export function PasskeysPanel() {
                   className="shrink-0 gap-1.5 text-destructive hover:text-destructive"
                   disabled={removing === key.id}
                   onClick={() => setPendingDelete(key)}
-                  aria-label={`Remove ${key.device_label || "passkey"}`}
+                  aria-label={t("auth.settings.passkeys.removeLabel", { name: key.device_label || t("auth.settings.passkeys.name") })}
                 >
                   {removing === key.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                   ) : (
                     <Trash2 className="h-4 w-4" aria-hidden />
                   )}
-                  Delete
+                  {t("auth.settings.passkeys.delete")}
                 </Button>
               </li>
             ))}
@@ -214,19 +212,18 @@ export function PasskeysPanel() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove this passkey?</AlertDialogTitle>
+            <AlertDialogTitle>{t("auth.settings.passkeys.confirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingDelete?.device_label || "This passkey"} will no longer sign you in. You can
-              always register it again, and your e-mail link keeps working.
+              {t("auth.settings.passkeys.confirmBody", { name: pendingDelete?.device_label || t("auth.settings.passkeys.this") })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep it</AlertDialogCancel>
+            <AlertDialogCancel>{t("auth.settings.passkeys.keep")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => pendingDelete && void remove(pendingDelete)}
             >
-              Delete passkey
+              {t("auth.settings.passkeys.deleteAction")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

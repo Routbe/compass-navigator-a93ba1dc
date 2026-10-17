@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { KeyRound, Mail, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -10,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
  * that are active for the current account.
  */
 export function ConnectedAccounts() {
+  const { t, locale } = useI18n();
   const { user } = useAuth();
   const hasPassword = (user?.app_metadata?.["has_password"] as boolean | undefined) ?? true;
 
@@ -17,34 +19,34 @@ export function ConnectedAccounts() {
     {
       id: "email",
       icon: <Mail className="h-4 w-4" aria-hidden />,
-      label: "E-mail",
+      label: t("auth.settings.methods.email"),
       detail: user?.email ?? "—",
-      state: "Active",
+      state: t("auth.settings.methods.active"),
     },
     {
       id: "password",
       icon: <KeyRound className="h-4 w-4" aria-hidden />,
-      label: "Password",
+      label: t("auth.settings.methods.password"),
       detail: hasPassword
-        ? "Change it under Security below"
-        : "Not set — use a magic link to sign in",
-      state: hasPassword ? "Active" : "Not set",
+        ? t("auth.settings.methods.change")
+        : t("auth.settings.methods.unset"),
+      state: hasPassword ? t("auth.settings.methods.active") : t("auth.settings.methods.notSet"),
     },
     {
       id: "magic",
       icon: <Sparkles className="h-4 w-4" aria-hidden />,
-      label: "Magic link",
-      detail: "A single-use sign-in link by e-mail",
-      state: "Always available",
+      label: t("auth.settings.methods.link"),
+      detail: t("auth.settings.methods.linkDescription"),
+      state: t("auth.settings.methods.available"),
     },
   ];
 
   return (
     <section className="mt-4 space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
       <div>
-        <h2 className="text-sm font-medium text-foreground">Sign-in methods</h2>
+        <h2 className="text-sm font-medium text-foreground">{t("auth.settings.methods.title")}</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Your account is hosted on our own infrastructure — no third-party identity provider.
+          {t("auth.settings.methods.description")}
         </p>
       </div>
 

@@ -52,7 +52,7 @@ export function ProfileContentAccordion({
         <span className="flex flex-1 items-center justify-between gap-3 pr-2">
           <span className="text-base font-medium">{t("studio.content.title")}</span>
           <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
-            {live} zichtbaar
+            {t("studio.content.visible", { count: live })}
           </span>
         </span>
       </AccordionTrigger>
