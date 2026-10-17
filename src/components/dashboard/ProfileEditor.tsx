@@ -216,7 +216,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
   const [query, setQuery] = useState("");
   /** Standaard staat "Soeverein & Fediverse" voor: soevereine tools eerst. */
   const [cat, setCat] = useState<string>("featured");
-  /** Actieve curated tab in de "+ Add component"-drawer (`null` = klassieke categorieën). */
+  /** Actieve curated tab in de t("studio.editor.add")-drawer (`null` = klassieke categorieën). */
   const [blockTab, setBlockTab] = useState<string | null>(null);
   const [openBlock, setOpenBlock] = useState<string | null>(null);
   const [stats, setStats] = useState<{ qrs: number; scans: number } | null>(null);
@@ -310,7 +310,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
         });
 
         setLoadError(
-          authFailureMessage(error, "We konden je profiel niet laden. Probeer het opnieuw."),
+          authFailureMessage(error, t("studio.editor.loadFailed")),
         );
       } finally {
         // Never leave the studio spinning: the loader stops on success and failure.
@@ -561,7 +561,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
     });
     } catch (e) {
       failCount.current += 1;
-      setSaveError(e instanceof Error ? e.message : "Netwerkfout");
+      setSaveError(e instanceof Error ? e.message : t("studio.editor.network"));
       setSaving(false);
       setRetryIn((n) => n + 1);
       return;
@@ -569,15 +569,15 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
     setSaving(false);
     if (!result.ok) {
       failCount.current += 1;
-      setSaveError(result.reason ?? "Opslaan mislukt");
+      setSaveError(result.reason ?? t("studio.editor.saveFailed"));
       if (silent) return;
-      if (result.reason === "handle_taken") return toast.error("That handle is already taken.");
+      if (result.reason === "handle_taken") return toast.error(t("studio.editor.taken"));
       if (result.reason === "handle_reserved")
-        return toast.error("That handle is reserved by the system.");
-      if (result.reason === "handle_invalid") return toast.error("That handle is not valid.");
+        return toast.error(t("studio.editor.reserved"));
+      if (result.reason === "handle_invalid") return toast.error(t("studio.editor.invalid"));
       if (result.reason === "handle_identity_mismatch")
         return toast.error(VERIFIED_STRUCTURE_MESSAGE);
-      return toast.error(result.reason ?? "Saving failed");
+      return toast.error(result.reason ?? t("studio.editor.saveFailedEn"));
     }
     setClaimed(normalized);
     const nextRevision = Number((result.profile as { draftRevision?: number } | null)?.draftRevision ?? draftRevision);
@@ -589,16 +589,16 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
     // Alleen "opgeslagen" als er tijdens het opslaan niets meer veranderde.
     if (editRev.current === rev) setDirty(false);
     setSavedAt(Date.now());
-    if (!silent) toast.success("Concept opgeslagen");
+    if (!silent) toast.success(t("studio.editor.saved"));
   };
 
   const publish = async () => {
     if (dirty || saving) {
-      toast.info("Wacht tot je concept is opgeslagen.");
+      toast.info(t("studio.editor.wait"));
       return;
     }
     if (draftRevision === publishedRevision) {
-      toast.info("Er zijn geen nieuwe wijzigingen om te publiceren.");
+      toast.info(t("studio.editor.noChanges"));
       return;
     }
     setPublishing(true);
@@ -610,9 +610,9 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
     setPublishing(false);
     if (!result.ok || !result.meta) {
       if (result.reason === "draft_conflict") {
-        toast.error("Dit concept is intussen in een ander tabblad gewijzigd. Herlaad de Studio.");
+        toast.error(t("studio.editor.conflict"));
       } else {
-        toast.error("Publiceren is mislukt. Je concept blijft veilig bewaard.");
+        toast.error(t("studio.editor.publishFailed"));
       }
       return;
     }
@@ -620,7 +620,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
     setClaimed(normalized);
     void queryClient.invalidateQueries({ queryKey: ["public-profile", normalized] });
     void router.invalidate();
-    toast.success("Gepubliceerd ✓");
+    toast.success(t("studio.editor.published"));
   };
 
   const applyPayload = (payload: Record<string, unknown>) => {
@@ -651,7 +651,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
     };
     setDiscarding(false);
     if (!result.ok || !result.payload || !result.meta) {
-      toast.error(result.reason === "draft_conflict" ? "Het concept is in een ander tabblad gewijzigd." : "Wijzigingen verwerpen is mislukt.");
+      toast.error(result.reason === "draft_conflict" ? t("studio.editor.discardConflict") : t("studio.editor.discardFailed"));
       return;
     }
     applyPayload(result.payload as Record<string, unknown>);
@@ -659,7 +659,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
     setPublishedRevision(result.meta.publishedRevision);
     setDirty(false);
     setSaveError(null);
-    toast.success("Concept hersteld naar de gepubliceerde versie");
+    toast.success(t("studio.editor.restored"));
   };
 
   const addBlock = (kind: string, value = "") => {
@@ -745,10 +745,10 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
   if (loadError) {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-center">
-        <p className="text-sm font-medium">Je profiel kon niet geladen worden</p>
+        <p className="text-sm font-medium">{t("studio.editor.loadTitle")}</p>
         <p className="max-w-sm text-sm text-muted-foreground">{loadError}</p>
         <Button variant="outline" onClick={() => setLoadAttempt((n) => n + 1)}>
-          Opnieuw proberen
+          {t("studio.editor.retry")}
         </Button>
       </div>
     );
@@ -782,7 +782,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
   return (
     <div className={cn("flex flex-1 flex-col space-y-4", showSaveBar && "pb-16 lg:pb-4")}>
       {storedHandleInvalid && (
-        <HandleErrorBanner message="Je huidige gebruikersnaam voldoet niet aan de nieuwe richtlijnen. Kies een nieuwe geldige handle om je profiel online te houden." />
+        <HandleErrorBanner message={t("studio.editor.oldHandle")} />
       )}
       {/* Compacte studiokop: tier-balk en tabs blijven bij het scrollen staan en
           nemen samen nauwelijks hoogte in, zodat de live preview hoger begint. */}
@@ -820,17 +820,17 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
               void navigator.clipboard.writeText(
                 live.url ?? `https://rout.be${styledProfilePath(normalized || "handle", urlStyle)}`,
               );
-              toast.success("Link gekopieerd!");
+              toast.success(t("studio.editor.copied"));
             }}
             className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 text-[11px] font-medium hover:bg-muted"
           >
-            <Copy className="h-3.5 w-3.5" aria-hidden /> Kopieer
+            <Copy className="h-3.5 w-3.5" aria-hidden /> {t("studio.editor.copy")}
           </button>
           <button
             type="button"
             onClick={openHandleEditor}
-            aria-label="Gebruikersnaam bewerken"
-            title="Gebruikersnaam bewerken"
+            aria-label={t("studio.editor.editHandle")}
+            title={t("studio.editor.editHandle")}
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border hover:bg-muted"
           >
             <Pencil
@@ -844,8 +844,8 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
             type="button"
             onClick={undo}
             disabled={!canUndo}
-            aria-label="Ongedaan maken (Ctrl+Z)"
-            title="Terug — ongedaan maken (Ctrl+Z)"
+            aria-label={t("studio.editor.undo")}
+            title={t("studio.editor.undoTitle")}
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border transition-colors hover:bg-muted disabled:opacity-40"
           >
             <Undo2 className="h-4 w-4" aria-hidden />
@@ -854,8 +854,8 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
             type="button"
             onClick={redo}
             disabled={!canRedo}
-            aria-label="Opnieuw doen (Ctrl+Y)"
-            title="Verder — opnieuw doen (Ctrl+Y)"
+            aria-label={t("studio.editor.redo")}
+            title={t("studio.editor.redoTitle")}
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border transition-colors hover:bg-muted disabled:opacity-40"
           >
             <Redo2 className="h-4 w-4" aria-hidden />
@@ -866,7 +866,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
             rel="noopener noreferrer"
             className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-xs font-medium transition-colors hover:bg-muted"
           >
-            <Eye className="h-3.5 w-3.5" aria-hidden /> <span className="hidden min-[400px]:inline sm:inline">Bekijk live profiel ↗</span><span className="min-[400px]:hidden sm:hidden">Live ↗</span>
+            <Eye className="h-3.5 w-3.5" aria-hidden /> <span className="hidden min-[400px]:inline sm:inline">{t("studio.editor.view")}</span><span className="min-[400px]:hidden sm:hidden">{t("studio.editor.viewShort")}</span>
           </a>
           <Button
             type="button"
@@ -876,7 +876,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
             onClick={() => void discard()}
           >
             {discarding ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-            Verwerpen
+            {t("studio.editor.discard")}
           </Button>
           <Button
             type="button"
@@ -885,7 +885,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
             onClick={() => void publish()}
           >
             {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Upload className="h-3.5 w-3.5" aria-hidden />}
-            {publishing ? "Publiceren…" : "Publiceren"}
+            {publishing ? t("studio.editor.publishing") : t("studio.editor.publish")}
           </Button>
         </div>
       </div>
@@ -902,7 +902,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
             role="tab"
             type="button"
             aria-selected={tab === id}
-            title={label}
+            title={t(`studio.tab.${id}`)}
             onClick={() => setTab(id)}
             className={cn(
               "flex h-9 flex-1 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 text-xs font-medium transition-colors",
@@ -912,7 +912,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
             )}
           >
             <Icon className="h-3.5 w-3.5" aria-hidden />
-            {label}
+            {t(`studio.tab.${id}`)}
           </button>
         ))}
       </div>
@@ -957,14 +957,14 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                 onWidget={(id) => {
                   if (id === "questions") {
                     setPref("questionsEnabled", true);
-                    toast.success("Anonieme Vragenbox staat aan op je profiel");
+                    toast.success(t("studio.editor.questionsOn"));
                   } else if (id === "badges") {
                     setPref("badgeShowcaseVisible", true);
-                    toast.success("ROUT Badges staan aan op je profiel");
+                    toast.success(t("studio.editor.badgesOn"));
                   } else if (id === "youtube") {
                     addBlock("widget:youtube");
                   } else {
-                    toast.info("Het Prikbord staat altijd op je profiel; beheer berichten bij Prikbord in de Studio");
+                    toast.info(t("studio.editor.boardHelp"));
                   }
                 }}
               >
@@ -975,12 +975,11 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Je badges verschijnen automatisch onder je profielkop. Zet ze hier uit als
-                        je liever een kale pagina hebt.
+                        {t("studio.editor.badgesHelp")}
                       </p>
                     </div>
                     <Switch
-                      aria-label="Badges tonen op je profiel"
+                      aria-label={t("studio.editor.badgeShow")}
                       checked={prefs.badgeShowcaseVisible}
                       onCheckedChange={(v) => setPref("badgeShowcaseVisible", v)}
                     />
@@ -1000,57 +999,55 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
 
               {/* ⚙️ Geavanceerde Instellingen: alles wat geen pagina-inhoud is. */}
               <p className="px-1 pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                ⚙️ Geavanceerde Instellingen
+                {t("studio.editor.advanced")}
               </p>
               <AccordionItem
                 value="advanced_settings"
                 className="rounded-2xl border border-border bg-card px-4 sm:px-5"
               >
                 <AccordionTrigger className="hover:no-underline">
-                  <span className="text-base font-medium">QR, privacy &amp; delen</span>
+                  <span className="text-base font-medium">{t("studio.editor.privacySharing")}</span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
                   {/* Eén bron van waarheid: QR-styling gebeurt in de generator. */}
                   <section className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
-                    <h2 className="text-lg font-medium">Profiel-QR</h2>
+                    <h2 className="text-lg font-medium">{t("studio.editor.qr")}</h2>
                     <p className="text-sm text-muted-foreground">
-                      Je profiel-QR ontwerp je in de QR-generator: kleuren, patronen, hoeken en
-                      logo. De code verwijst altijd naar je profiel, dus geprinte kaartjes blijven
-                      geldig.
+                      {t("studio.editor.qrHelp")}
                     </p>
                     <a
                       href="/qr?type=profile_hub"
                       className="inline-flex h-9 items-center gap-2 rounded-xl bg-foreground px-3 text-xs font-medium text-background transition-opacity hover:opacity-90"
                     >
-                      <QrCode className="h-3.5 w-3.5" aria-hidden /> Stijl &amp; download profiel-QR
+                      <QrCode className="h-3.5 w-3.5" aria-hidden /> {t("studio.editor.qrDownload")}
                     </a>
                   </section>
 
                 {/* 🔒 Privacy & Openbaar Profiel */}
                 <section className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
-                  <h2 className="text-lg font-medium">🔒 Privacy &amp; Openbaar Profiel</h2>
+                  <h2 className="text-lg font-medium">{t("studio.editor.privacy")}</h2>
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">Openbaar profiel</p>
+                      <p className="text-sm font-medium">{t("studio.editor.public")}</p>
                       <p className="text-sm text-muted-foreground">
-                        Uit: bezoekers zien geen profielinhoud of tijdlijn. Jij kunt alles blijven beheren.
+                        {t("studio.editor.publicHelp")}
                       </p>
                     </div>
                     <Switch
-                      aria-label="Openbaar profiel"
+                      aria-label={t("studio.editor.public")}
                       checked={prefs.publicProfile}
                       onCheckedChange={(v) => setPref("publicProfile", v)}
                     />
                   </div>
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">Tijdlijn openbaar tonen</p>
+                      <p className="text-sm font-medium">{t("studio.editor.timeline")}</p>
                       <p className="text-sm text-muted-foreground">
-                        Mijlpalen, badges en status, nieuwste eerst.
+                        {t("studio.editor.timelineHelp")}
                       </p>
                     </div>
                     <Switch
-                      aria-label="Tijdlijn openbaar tonen"
+                      aria-label={t("studio.editor.timeline")}
                       checked={prefs.timelineVisible}
                       disabled={!prefs.publicProfile}
                       onCheckedChange={(v) => setPref("timelineVisible", v)}
@@ -1059,7 +1056,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                 </section>
 
                   <section className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
-                    <h2 className="text-lg font-medium">Social share inspecteur</h2>
+                    <h2 className="text-lg font-medium">{t("studio.editor.share")}</h2>
                     <ShareInspector
                       prefs={prefs}
                       onPrefChange={setPref}
@@ -1115,7 +1112,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
           {tab === "analytics" && (
             <section className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-lg font-medium">Analytics</h2>
+                <h2 className="text-lg font-medium">{t("studio.editor.analytics")}</h2>
                 <Select value={range} onValueChange={(v) => setRange(v as typeof range)}>
                   <SelectTrigger className="h-9 w-40 text-xs">
                     <SelectValue />
@@ -1123,14 +1120,14 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                   <SelectContent>
                     {RANGE_OPTIONS.map((r) => (
                       <SelectItem key={r.id} value={r.id}>
-                        {r.label}
+                        {t(`studio.range.${r.id}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <p className="text-xs text-muted-foreground">
-                Privacy-first metrics: no cookies, no user profiles, purely aggregated counts.
+                {t("studio.editor.analyticsPrivacy")}
               </p>
               {!stats ? (
                 <div className="flex h-24 items-center justify-center">
@@ -1139,9 +1136,9 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
               ) : (
                 <div className="grid gap-2 sm:grid-cols-3">
                   {[
-                    { label: "Dynamic QR Codes", value: stats.qrs },
-                    { label: "Total Scans", value: stats.scans },
-                    { label: "Active Components", value: blocks.filter((b) => !b.hidden).length },
+                    { label: t("studio.editor.dynamicQr"), value: stats.qrs },
+                    { label: t("studio.editor.scans"), value: stats.scans },
+                    { label: t("studio.editor.components"), value: blocks.filter((b) => !b.hidden).length },
                   ].map((s) => (
                     <div key={s.label} className="rounded-xl border border-border p-3">
                       <p className="text-2xl font-medium">{s.value}</p>
@@ -1152,14 +1149,14 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
               )}
 
               <div className="rounded-xl border border-border p-3">
-                <p className="mb-2 text-xs font-medium text-muted-foreground">Traffic trend</p>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">{t("studio.editor.trend")}</p>
                 {series === null ? (
                   <div className="flex h-40 items-center justify-center">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
                 ) : series.length === 0 ? (
                   <div className="flex h-40 items-center justify-center text-center text-xs text-muted-foreground">
-                    No scan or view data recorded yet for this timeframe.
+                    {t("studio.editor.emptyStats")}
                   </div>
                 ) : (
                   <div className="h-40">
@@ -1195,17 +1192,17 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
               {/* Zelfde data als tabel — bij geen data toch één lege regel. */}
               <div className="overflow-hidden rounded-xl border border-border">
                 <div className="flex items-center justify-between border-b border-border px-3 py-2">
-                  <p className="text-xs font-medium text-muted-foreground">Traffic trend (tabel)</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t("studio.editor.table")}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {(series ?? []).reduce((sum, r) => sum + r.scans, 0)} totaal
+                    {t("studio.editor.total", { count: (series ?? []).reduce((sum, r) => sum + r.scans, 0) })}
                   </p>
                 </div>
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border text-[10px] uppercase tracking-wide text-muted-foreground">
-                      <th className="px-3 py-2 text-left font-medium">Datum</th>
-                      <th className="px-3 py-2 text-right font-medium">Scans &amp; views</th>
-                      <th className="px-3 py-2 text-left font-medium">Verdeling</th>
+                      <th className="px-3 py-2 text-left font-medium">{t("studio.editor.date")}</th>
+                      <th className="px-3 py-2 text-right font-medium">{t("studio.editor.views")}</th>
+                      <th className="px-3 py-2 text-left font-medium">{t("studio.editor.distribution")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1246,11 +1243,11 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
 
               <div className="rounded-xl border border-border p-3">
                 <p className="mb-2 text-xs font-medium text-muted-foreground">
-                  Top Clicked Components
+                  {t("studio.editor.top")}
                 </p>
                 {topClicked.length === 0 ? (
                   <p className="py-4 text-center text-xs text-muted-foreground">
-                    No click data yet.
+                    {t("studio.editor.emptyClicks")}
                   </p>
                 ) : (
                   <ul className="space-y-2">
@@ -1258,7 +1255,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                       <li key={block.id} className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
                           <span className="truncate font-medium">{block.label}</span>
-                          <span className="shrink-0 text-muted-foreground">{clicks} clicks</span>
+                          <span className="shrink-0 text-muted-foreground">{t("studio.editor.clicks", { count: clicks })}</span>
                         </div>
                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                           <div
@@ -1287,20 +1284,19 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                 className="rounded-2xl border border-border bg-card px-4 sm:px-5"
               >
                 <AccordionTrigger className="hover:no-underline">
-                  <span className="text-base font-medium">💳 Betalingen &amp; facturen</span>
+                  <span className="text-base font-medium">{t("studio.editor.billing")}</span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
                   <section className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
-                    <h2 className="text-lg font-medium">Betaalmethodes &amp; facturatie</h2>
+                    <h2 className="text-lg font-medium">{t("studio.editor.billingMethods")}</h2>
                     <p className="text-sm text-muted-foreground">
-                      Je facturen, abonnement en betaalmethodes beheer je bij je
-                      accountinstellingen.
+                      {t("studio.editor.billingHelp")}
                     </p>
                     <a
                       href="/settings?tab=payments"
                       className="inline-block rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
                     >
-                      Betalingen &amp; facturen →
+                      {t("studio.editor.billingLink")}
                     </a>
                   </section>
 
@@ -1314,19 +1310,19 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                 className="rounded-2xl border border-border bg-card px-4 sm:px-5"
               >
                 <AccordionTrigger className="hover:no-underline">
-                  <span className="text-base font-medium">📦 Data, export &amp; domein</span>
+                  <span className="text-base font-medium">{t("studio.editor.data")}</span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
                   <section className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
-                    <h2 className="text-lg font-medium">Jouw data &amp; eigen domein</h2>
+                    <h2 className="text-lg font-medium">{t("studio.editor.dataOwn")}</h2>
                     <p className="text-sm text-muted-foreground">
-                      Data-export, verwijdering en je eigen domein staan bij je accountinstellingen.
+                      {t("studio.editor.dataHelp")}
                     </p>
                     <a
                       href="/settings?tab=data"
                       className="inline-block rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
                     >
-                      Data &amp; domein →
+                      {t("studio.editor.dataLink")}
                     </a>
                   </section>
                 </AccordionContent>
@@ -1338,7 +1334,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
               >
                 <AccordionTrigger className="hover:no-underline">
                   <span className="text-base font-medium">
-                    🏷️ Social Sharing &amp; SEO Metadata
+                    {t("studio.editor.seo")}
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
@@ -1358,7 +1354,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                 className="rounded-2xl border border-border bg-card px-4 sm:px-5"
               >
                 <AccordionTrigger className="hover:no-underline">
-                  <span className="text-base font-medium">🔳 Profiel-QR</span>
+                  <span className="text-base font-medium">{t("studio.editor.qrTitle")}</span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
                   <ProfileQrCard
@@ -1376,25 +1372,25 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                 className="rounded-2xl border border-border bg-card px-4 sm:px-5"
               >
                 <AccordionTrigger className="hover:no-underline">
-                  <span className="text-base font-medium">🔗 Handle, URL &amp; identiteit</span>
+                  <span className="text-base font-medium">{t("studio.editor.identity")}</span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
                   <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-lg font-medium">
                         {alias
-                          ? "Privacy Alias (rout.be/u/[alias])"
-                          : "Geverifieerde Handle (rout.be/[handle])"}
+                          ? t("studio.editor.aliasTitle")
+                          : t("studio.editor.verifiedTitle")}
                       </h2>
                       {alias && (
                         <span className="rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          minimaal 5 tekens · 2 cijfers
+                          {t("studio.editor.aliasLimit")}
                         </span>
                       )}
                     </div>
                     <p id="handle-help" className="mt-1 text-xs text-muted-foreground">
                       {alias
-                        ? "Kies vrij een pseudoniem. Enkel kleine letters, cijfers en . - _ — minstens 5 tekens en 2 cijfers."
+                        ? t("studio.editor.aliasHint")
                         : handleRuleHint(handleCtx)}
                     </p>
                     <div className="mt-3 flex min-w-0 items-center gap-2">
@@ -1408,7 +1404,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                         name={alias ? "alias_handle" : "verified_handle"}
                         value={handle}
                         maxLength={30}
-                        placeholder="yourname"
+                        placeholder={t("studio.editor.yourname")}
                         minLength={HANDLE_MIN_LENGTH}
                         autoComplete="off"
                         autoCapitalize="none"
@@ -1440,14 +1436,14 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                             {handleProblem ?? handleIssue(normalized, handleCtx)}
                           </span>
                         ) : availability === "checking" ? (
-                          <span className="text-muted-foreground">Checking availability…</span>
+                          <span className="text-muted-foreground">{t("studio.editor.checking")}</span>
                         ) : availability === "taken" ? (
                           <span className="inline-flex items-center gap-1 font-mono text-destructive">
-                            <X className="h-3.5 w-3.5" /> @{normalized} is already registered
+                            <X className="h-3.5 w-3.5" /> {t("studio.editor.registered", { handle: normalized })}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 font-mono text-emerald-600 dark:text-emerald-400">
-                            <Check className="h-3.5 w-3.5" /> @{normalized} is available
+                            <Check className="h-3.5 w-3.5" /> {t("studio.editor.available", { handle: normalized })}
                           </span>
                         )}
                       </p>
@@ -1468,29 +1464,28 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                   {verified && (
                   <section className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
                     <div>
-                      <h2 className="text-lg font-medium">Identiteit, URL &amp; badge</h2>
+                      <h2 className="text-lg font-medium">{t("studio.editor.identityBadge")}</h2>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Eén account, twee publieke ruimtes: je geverifieerde profiel en je privé
-                        alias-hub.
+                        {t("studio.editor.twoSpaces")}
                       </p>
                     </div>
 
 
                     <div className="space-y-2">
-                      <p className="input-label">Actieve identiteit</p>
+                      <p className="input-label">{t("studio.editor.activeIdentity")}</p>
                       <div className="flex flex-wrap gap-2">
                         {[
                           {
                             id: "legal" as const,
                             space: "verified" as const,
-                            label: "Echte naam · Directe URL",
+                            label: t("studio.editor.legalName"),
                             note: "bv. rout.be/creatief",
                             pro: true,
                           },
                           {
                             id: "private" as const,
                             space: "alias" as const,
-                            label: "Privé alias",
+                            label: t("studio.editor.privateAlias"),
                             note: "bv. rout.be/u/creatief",
                             pro: false,
                           },
@@ -1536,25 +1531,23 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                       </div>
                       <p className="text-[11px] text-muted-foreground">
 
-                        Geverifieerde handles krijgen nooit automatische cijfers. In privé-modus
-                        hoeft je alias niets met je wettelijke naam te maken te hebben.
+                        {t("studio.editor.aliasPrivacy")}
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <p className="input-label">Je profiel-URL</p>
+                      <p className="input-label">{t("studio.editor.profileUrl")}</p>
                       <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background/60 px-3 py-2.5">
                         <span className="truncate font-mono text-sm text-foreground">
                           {host}
                           {styledProfilePath(normalized || "handle", urlStyle)}
                         </span>
                         <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">
-                          {identitySpace === "verified" ? "Geverifieerd" : "Privé alias"}
+                          {identitySpace === "verified" ? t("studio.editor.verified") : t("studio.editor.privateAlias")}
                         </span>
                       </div>
                       <p className="text-[11px] text-muted-foreground">
-                        Je URL volgt automatisch je actieve identiteit — geen cijfers, geen
-                        symbolen.
+                        {t("studio.editor.urlHelp")}
                       </p>
                     </div>
                   </section>
@@ -1568,7 +1561,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                 className="rounded-2xl border border-border bg-card px-4 sm:px-5"
               >
                 <AccordionTrigger className="hover:no-underline">
-                  <span className="text-base font-medium">🏅 ROUT Badges &amp; weergave</span>
+                  <span className="text-base font-medium">{t("studio.editor.badgeTitle")}</span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
                   <VerifiedBadgeCard verified={verified} handle={handle || null} />
@@ -1576,13 +1569,13 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                   <section className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
                     <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-background/60 p-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium">Badge tonen</p>
+                        <p className="text-sm font-medium">{t("studio.editor.showBadge")}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Verberg je badge als je liever geen status op je profiel toont.
+                          {t("studio.editor.hideBadgeHelp")}
                         </p>
                       </div>
                       <Switch
-                        aria-label="Badge tonen"
+                        aria-label={t("studio.editor.showBadge")}
                         disabled={!verified}
                         checked={prefs.badgeVisible}
                         onCheckedChange={(v) => setPref("badgeVisible", v)}
@@ -1593,14 +1586,13 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                         hoofdaccount geverifieerd is. Altijd uitschakelbaar. */}
                     <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-background/60 p-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium">Mens-badge op je alias-pagina</p>
+                        <p className="text-sm font-medium">{t("studio.editor.humanBadge")}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Toont op rout.be/u/… dat dit account aan een geverifieerd, menselijk
-                          account gekoppeld is — zonder je wettelijke naam te tonen.
+                          {t("studio.editor.humanHelp")}
                         </p>
                       </div>
                       <Switch
-                        aria-label="Mens-badge op je alias-pagina"
+                        aria-label={t("studio.editor.humanBadge")}
                         disabled={!verified}
                         checked={prefs.humanBadgeVisible}
                         onCheckedChange={(v) => setPref("humanBadgeVisible", v)}
@@ -1609,13 +1601,13 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
 
                     <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-background/60 p-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium">Badgeverzameling tonen</p>
+                        <p className="text-sm font-medium">{t("studio.editor.collection")}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Toont je ontgrendelde badges met hun vorm en logo onder je profielkop.
+                          {t("studio.editor.collectionHelp")}
                         </p>
                       </div>
                       <Switch
-                        aria-label="Badgeverzameling tonen"
+                        aria-label={t("studio.editor.collection")}
                         checked={prefs.badgeShowcaseVisible}
                         onCheckedChange={(v) => setPref("badgeShowcaseVisible", v)}
                       />
@@ -1623,12 +1615,9 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
 
                     <div className="space-y-2">
                       <p className="input-label flex items-center gap-1">
-                        Badgetype
-                        <InfoHint label="Welke badge kies ik?">
-                          Privacy-schild: bevestigt dat je een echte mens bent, zonder je naam of
-                          land te tonen. Blauw vinkje: toont je geverifieerde identiteit (naam en
-                          land). Zwarte domeinbadge: bewijst dat je de domeinnaam achter je handle
-                          via DNS claimde. Je mag ook helemaal geen badge tonen.
+                        {t("studio.editor.badgeType")}
+                        <InfoHint label={t("studio.editor.whichBadge")}>
+                          {t("studio.editor.badgeExplanation")}
                         </InfoHint>
                       </p>
                       <div className="grid gap-2 sm:grid-cols-2">
@@ -1653,7 +1642,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                             >
                               <span className="block font-medium">{b.label}</span>
                               <span className="block text-muted-foreground">
-                                {needsDomain ? "Claim eerst een domein via DNS" : b.note}
+                                {needsDomain ? t("studio.editor.claimDomain") : b.note}
                               </span>
                             </button>
                           );
@@ -1665,11 +1654,9 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                         donkere of drukke achtergronden. */}
                     <div className="space-y-2">
                       <p className="input-label flex items-center gap-1">
-                        Badge-achtergrond
-                        <InfoHint label="Waarom een achtergrond achter de badge?">
-                          Op een zwarte of drukke achtergrond valt het vinkje soms weg. Zet er een
-                          zachte gloed, een ronde sticker of een licht randje achter in een kleur
-                          naar keuze, zodat de badge altijd zichtbaar blijft.
+                        {t("studio.editor.backdrop")}
+                        <InfoHint label={t("studio.editor.backdropWhy")}>
+                          {t("studio.editor.backdropHelp")}
                         </InfoHint>
                       </p>
                       <div className="grid gap-2 sm:grid-cols-2">
@@ -1695,7 +1682,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
-                            aria-label="Kleur badge-achtergrond"
+                            aria-label={t("studio.editor.backdropColor")}
                             value={prefs.badgeBackdropColor ?? "#4ade80"}
                             onChange={(e) => setPref("badgeBackdropColor", e.target.value)}
                             className="h-11 w-14 cursor-pointer rounded-xl border border-border bg-transparent"
@@ -1714,7 +1701,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
 
                     {prefs.badgeType === "verified" && (
                       <div className="space-y-2">
-                        <p className="input-label">Naamweergave in de badge</p>
+                        <p className="input-label">{t("studio.editor.nameDisplay")}</p>
                         <div className="flex flex-wrap gap-2">
                           {BADGE_NAME_FORMATS.map((f) => (
                             <button
@@ -1735,7 +1722,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                         </div>
                         {legalName && (
                           <p className="text-[11px] text-muted-foreground">
-                            Voorbeeld: {formatBadgeName(legalName, prefs.badgeNameFormat)}
+                            {t("studio.editor.example", { name: formatBadgeName(legalName, prefs.badgeNameFormat) })}
                           </p>
                         )}
                       </div>
@@ -1750,7 +1737,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                 className="rounded-2xl border border-border bg-card px-4 sm:px-5"
               >
                 <AccordionTrigger className="hover:no-underline">
-                  <span className="text-base font-medium">💛 Steunpagina &amp; donaties</span>
+                  <span className="text-base font-medium">{t("studio.editor.support")}</span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
                   <TipPagePanel />
@@ -1767,7 +1754,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                 className="rounded-2xl border border-border bg-card px-4 sm:px-5"
               >
                 <AccordionTrigger className="hover:no-underline">
-                  <span className="text-base font-medium">🌐 Subdomeinen &amp; Custom Domains</span>
+                  <span className="text-base font-medium">{t("studio.editor.domains")}</span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
                   <SubdomainPanel />
@@ -1782,7 +1769,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
               >
                 <AccordionTrigger className="hover:no-underline">
                   <span className="text-base font-medium">
-                    🦋 Bluesky DID &amp; Identity Protocol
+                    {t("studio.editor.bluesky")}
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
@@ -1807,15 +1794,15 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
         >
           {saveError && !saving ? (
             <button type="button" onClick={() => void save(false)} className="text-destructive underline">
-              Niet opgeslagen – opnieuw proberen
+              {t("studio.editor.notSaved")}
             </button>
           ) : saving || dirty ? (
             <>
-              <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Opslaan…
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> {t("studio.editor.saving")}
             </>
           ) : savedAt ? (
             <>
-              <Check className="h-3 w-3 text-primary" aria-hidden /> Concept opgeslagen
+              <Check className="h-3 w-3 text-primary" aria-hidden /> {t("studio.editor.saved")}
             </>
           ) : null}
         </div>
@@ -1833,16 +1820,15 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                   onClick={() => void save(false)}
                   className="truncate text-left text-destructive underline"
                 >
-                  Niet opgeslagen – opnieuw proberen
+                  {t("studio.editor.notSaved")}
                 </button>
               ) : saving ? (
                 <>
-                  <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden /> Opslaan…
+                  <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden /> {t("studio.editor.saving")}
                 </>
               ) : dirty ? (
                 <>
-                  <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden /> Wijzigingen
-                  opslaan…
+                  <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden /> {t("studio.editor.changesSaving")}
                 </>
               ) : (
                 <>
@@ -1850,8 +1836,8 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                     className="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400"
                     aria-hidden
                   />
-                  <span className="hidden min-[380px]:inline">Concept automatisch opgeslagen</span>
-                  <span className="min-[380px]:hidden">Opgeslagen</span>
+                  <span className="hidden min-[380px]:inline">{t("studio.editor.autosaved")}</span>
+                  <span className="min-[380px]:hidden">{t("studio.editor.savedShort")}</span>
                 </>
               )}
             </p>
@@ -1860,7 +1846,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
               onClick={() => setPreviewOpen(true)}
               className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-foreground px-4 text-xs font-medium text-background"
             >
-              <Eye className="h-3.5 w-3.5" aria-hidden /> Bekijk live preview
+              <Eye className="h-3.5 w-3.5" aria-hidden /> {t("studio.editor.preview")}
             </button>
           </div>
         </div>
@@ -1870,10 +1856,10 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
       <Drawer open={previewOpen} onOpenChange={setPreviewOpen}>
         <DrawerContent className="flex max-h-[92vh] flex-col">
           <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-            <DrawerTitle className="text-sm font-medium">Live view</DrawerTitle>
+            <DrawerTitle className="text-sm font-medium">{t("studio.editor.previewTitle")}</DrawerTitle>
             <button
               type="button"
-              aria-label="Close"
+              aria-label={t("studio.editor.close")}
               onClick={() => setPreviewOpen(false)}
               className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
             >
@@ -1906,10 +1892,10 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
           {/* Fixed header: title, search bar and categories stay visible */}
           <div className="shrink-0 border-b border-border bg-background">
             <div className="flex items-center justify-between px-4 pb-2">
-              <DrawerTitle className="font-display text-lg">+ Add component</DrawerTitle>
+              <DrawerTitle className="font-display text-lg">{t("studio.editor.add")}</DrawerTitle>
               <button
                 type="button"
-                aria-label="Close"
+                aria-label={t("studio.editor.close")}
                 onClick={() => setDrawer(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
               >
@@ -1939,14 +1925,14 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                     const first = groups[0]?.items[0];
                     if (first) addBlock(first.kind);
                   }}
-                  placeholder="Zoek een component of plak direct een URL…"
+                  placeholder={t("studio.editor.searchPlaceholder")}
                   className="input-field h-11 rounded-xl pl-9 pr-9"
-                  aria-label="Search a component"
+                  aria-label={t("studio.editor.search")}
                 />
                 {(query || cat !== "all") && (
                   <button
                     type="button"
-                    aria-label="Clear filters"
+                    aria-label={t("studio.editor.clear")}
                     onClick={() => {
                       setQuery("");
                       setCat("all");
@@ -1961,27 +1947,27 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
             {/* Curated high-value tabs */}
             <div className="overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex w-max min-w-full items-center gap-2">
-                {BLOCK_TABS.map((t) => (
+                {BLOCK_TABS.map((catalogTab) => (
                   <button
-                    key={t.id}
+                    key={catalogTab.id}
                     type="button"
-                    title={t.description}
-                    onClick={() => setBlockTab(blockTab === t.id ? null : t.id)}
+                    title={t(`studio.catalog.help.${catalogTab.id}`)}
+                    onClick={() => setBlockTab(blockTab === catalogTab.id ? null : catalogTab.id)}
                     className={cn(
                       "inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-medium transition-colors",
-                      blockTab === t.id
+                      blockTab === catalogTab.id
                         ? "border-primary/40 bg-primary/10 text-foreground"
                         : "border-border text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {t.label}
+                    {t(`studio.catalog.tab.${catalogTab.id}`)}
                   </button>
                 ))}
               </div>
             </div>
             <div className="overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex w-max min-w-full items-center gap-2">
-                {[{ id: "all", label: "All" }, ...BLOCK_CATEGORIES].map((c) => (
+                {[{ id: "all", label: t("studio.editor.all") }, ...BLOCK_CATEGORIES].map((c) => (
                   <button
                     key={c.id}
                     type="button"
@@ -1997,7 +1983,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                     )}
                   >
                     {c.id === "featured" && <Star className="h-3.5 w-3.5" aria-hidden />}
-                    {c.label}
+                    {t(`studio.catalog.category.${c.id}`)}
                   </button>
                 ))}
               </div>
@@ -2015,18 +2001,18 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                   <SocialPlatformIcon source="link" className="h-[18px] w-[18px]" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-medium">Smart Link toevoegen</span>
+                  <span className="block text-xs font-medium">{t("studio.editor.smartLink")}</span>
                   <span className="block truncate text-[11px] text-muted-foreground">
                     {pastedUrl}
                   </span>
                 </span>
                 <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium">
-                  URL gedetecteerd
+                  {t("studio.editor.urlDetected")}
                 </span>
               </button>
             )}
             {groups.length === 0 && !pastedUrl ? (
-              <p className="py-6 text-center text-xs text-muted-foreground">No results.</p>
+              <p className="py-6 text-center text-xs text-muted-foreground">{t("studio.editor.noResults")}</p>
             ) : (
               groups.map((g) => (
                 <div key={g.id} className="space-y-2">
@@ -2042,12 +2028,12 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                         g.id === "featured" ? "text-foreground" : "text-muted-foreground",
                       )}
                     >
-                      {g.label}
+                      {t(g.id === blockTab ? `studio.catalog.tab.${g.id}` : `studio.catalog.category.${g.id}`)}
                     </span>
                     <span className="text-[11px] text-muted-foreground">({g.items.length})</span>
                     {g.id === "featured" && (
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium">
-                        Recommended
+                        {t("studio.editor.recommended")}
                       </span>
                     )}
                   </div>

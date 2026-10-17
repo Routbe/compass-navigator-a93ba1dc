@@ -192,7 +192,7 @@ export function ProfileBasicInfoAccordion({
                     onClick={() => void applyAvatarSource()}
                     className="shrink-0 rounded-xl border border-border px-3 text-[11px] font-medium hover:bg-muted disabled:opacity-50"
                   >
-                    {fetching ? "…" : "Ophalen"}
+                    {fetching ? "…" : t("studio.basic.fetch")}
                   </button>
                 </div>
               </div>
@@ -213,7 +213,7 @@ export function ProfileBasicInfoAccordion({
                           : "border-border hover:bg-muted",
                       )}
                     >
-                      {shape.label}
+                      {t(`studio.avatarShape.${shape.id}`)}
                     </button>
                   ))}
                 </div>
@@ -256,7 +256,7 @@ export function ProfileBasicInfoAccordion({
                   placeholder={t("studio.basic.bioPlaceholder")}
                   onChange={(e) => onTaglineChange(e.target.value.slice(0, MAX_BIO))}
                   className="input-field rounded-xl"
-                  aria-label="Bio"
+                  aria-label={t("studio.basic.bio")}
                 />
                 <BioTranslator text={tagline} variant={variant} />
                 <div className="flex flex-wrap items-center gap-1.5">

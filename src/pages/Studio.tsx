@@ -34,7 +34,7 @@ export default function Studio() {
   }, [user, loading, nav]);
 
   const tabs = [
-    { id: "alias" as ProfileVariant, label: "Privacy Alias", hint: "rout.be/u/handle", Icon: Sparkles, locked: false },
+    { id: "alias" as ProfileVariant, label: t("studio.profile.alias"), hint: "rout.be/u/handle", Icon: Sparkles, locked: false },
     { id: "verified" as ProfileVariant, label: t("studio.profile.verified"), hint: "rout.be/handle", Icon: BadgeCheck, locked: !unlocked },
   ];
 
@@ -77,7 +77,7 @@ export default function Studio() {
               </button>
             ))}
           </div>
-          <ErrorBoundary label="Profile Studio" inline>
+          <ErrorBoundary label={t("studio.page.title")} inline>
             {variant === "verified" && !unlocked ? (
               state.isLoading ? (
                 <p className="text-sm text-muted-foreground">{t("studio.common.loading")}</p>
@@ -104,7 +104,7 @@ function LockedVerifiedTab() {
         </div>
         <h2 className="font-display text-2xl tracking-tight">{t("studio.profile.verified")}</h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Je officiële pagina op rout.be/handle, met badge. Verifieer je identiteit om deze editor te ontgrendelen.
+          {t("studio.profile.unlock")}
         </p>
       </div>
       <VerificationPanel />

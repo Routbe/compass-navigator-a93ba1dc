@@ -234,19 +234,19 @@ export default function ProfileSettings() {
     if (error) {
       toast.error(
         error.message.includes("duplicate") || error.message.includes("unique")
-          ? "That handle is already taken."
+          ? t("studio.profileSettings.taken")
           : error.message,
       );
       return;
     }
     setInitial({ ...form, username: payload.username ?? "" });
     setForm((f) => ({ ...f, username: payload.username ?? "" }));
-    toast.success("Profile saved");
+    toast.success(t("studio.profileSettings.saved"));
   }
 
   if (loading || !user || !ready) {
     return (
-      <AppLayout title="Profile">
+      <AppLayout title={t("studio.profileSettings.title")}>
         <div className="flex min-h-[40vh] items-center justify-center">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
@@ -260,14 +260,14 @@ export default function ProfileSettings() {
 
   return (
     <AppLayout
-      title="Profile"
-      description="Your public handle, name and bio. Everything else stays private."
-      crumbs={[{ label: "Dashboard", to: "/dashboard" }, { label: "Profile" }]}
+      title={t("studio.profileSettings.title")}
+      description={t("studio.page.description")}
+      crumbs={[{ label: t("studio.dashboard.title"), to: "/dashboard" }, { label: t("studio.profileSettings.title") }]}
       actions={
         publicPath ? (
           <Button asChild size="sm" variant="outline" className="gap-1.5">
             <a href={publicPath} target="_blank" rel="noreferrer">
-              <ExternalLink className="h-4 w-4" /> View public profile
+              <ExternalLink className="h-4 w-4" /> {t("studio.editor.view")}
             </a>
           </Button>
         ) : null
@@ -276,11 +276,11 @@ export default function ProfileSettings() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
           <Panel
-            title="Public identity"
-            hint="A handle is claimed automatically when you sign up — change it any time."
+            title={t("studio.profileSettings.identity")}
+            hint={t("studio.profileSettings.identityHelp")}
           >
             <div className="space-y-4">
-              <Field label="Handle" htmlFor="handle" error={handleError}>
+              <Field label={t("studio.profileSettings.handle")} htmlFor="handle" error={handleError}>
                 <div className="flex items-stretch">
                   <span className="flex select-none items-center border border-r-0 border-border bg-muted px-3 text-sm text-muted-foreground">
                     {`rout.be${styledProfilePath("", urlStyle)}`}
@@ -318,7 +318,7 @@ export default function ProfileSettings() {
                 <p className="text-xs text-muted-foreground">{handleRuleHint(handleCtx)}</p>
               </Field>
 
-              <Field label="Display name" htmlFor="display_name">
+              <Field label={t("studio.profileSettings.name")} htmlFor="display_name">
                 <Input
                   id="display_name"
                   value={form.display_name}
@@ -328,35 +328,35 @@ export default function ProfileSettings() {
                 />
               </Field>
 
-              <Field label="Tagline" htmlFor="tagline">
+              <Field label={t("studio.profileSettings.tagline")} htmlFor="tagline">
                 <Input
                   id="tagline"
                   value={form.tagline}
                   onChange={(e) => set("tagline", e.target.value)}
                   className="rounded-none"
-                  placeholder="Graphic studio · Ghent"
+                  placeholder={t("studio.profileSettings.taglinePlaceholder")}
                 />
               </Field>
 
-              <Field label="Bio" htmlFor="bio">
+              <Field label={t("studio.profileSettings.bio")} htmlFor="bio">
                 <Textarea
                   id="bio"
                   value={form.bio}
                   onChange={(e) => set("bio", e.target.value)}
                   rows={4}
                   className="rounded-none"
-                  placeholder="What people should know in two lines."
+                  placeholder={t("studio.profileSettings.bioPlaceholder")}
                 />
               </Field>
 
-              <Field label="Avatar">
+              <Field label={t("studio.profileSettings.avatar")}>
                 <AvatarUpload
                   value={form.avatar_url.trim() || null}
                   name={form.display_name || form.username}
                   onChange={(url) => set("avatar_url", url ?? "")}
                 />
                 <p className="text-xs text-muted-foreground">
-                  JPG, PNG, WebP or GIF · max 5 MB. Leave empty for your initials.
+                  {t("studio.profileSettings.avatarHelp")}
                 </p>
               </Field>
 
@@ -377,7 +377,7 @@ export default function ProfileSettings() {
                   ) : (
                     <Check className="h-4 w-4" />
                   )}
-                  Save profile
+                  {t("studio.profileSettings.save")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -385,15 +385,15 @@ export default function ProfileSettings() {
                   disabled={!dirty || busy}
                   onClick={() => setForm(initial)}
                 >
-                  Reset
+                  {t("studio.profileSettings.reset")}
                 </Button>
                 <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                   {isAdmin ? (
                     <>
-                      <ShieldCheck className="h-3.5 w-3.5" /> Admin role active
+                      <ShieldCheck className="h-3.5 w-3.5" /> {t("studio.profileSettings.admin")}
                     </>
                   ) : (
-                    <>Role: user</>
+                    <>{t("studio.profileSettings.user")}</>
                   )}
                 </span>
               </div>
@@ -401,11 +401,11 @@ export default function ProfileSettings() {
           </Panel>
 
           <Panel
-            title="Kies je gebruikersnaam"
+            title={t("studio.profileSettings.choose")}
             hint={
               verified
-                ? "Je geverifieerde handle blijft herleidbaar naar je echte naam — kort of voluit, met . - _ of zonder."
-                : "Verifieer je account om een handle zonder cijfers te claimen die je echte naam draagt."
+                ? t("studio.profileSettings.verifiedHelp")
+                : t("studio.profileSettings.verifyHelp")
             }
           >
             <div className="space-y-3">
@@ -431,9 +431,9 @@ export default function ProfileSettings() {
                         <span className="flex shrink-0 items-center gap-1.5">
                           <span className="text-[10px] uppercase text-muted-foreground">
                             {optionStatus[option] === "free"
-                              ? "vrij"
+                              ? t("studio.profileSettings.free")
                               : optionStatus[option] === "taken"
-                                ? "bezet"
+                                ? t("studio.profileSettings.occupied")
                                 : "…"}
                           </span>
                           {active ? <Check className="h-4 w-4" /> : null}
@@ -444,30 +444,28 @@ export default function ProfileSettings() {
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  Zodra je echte naam bekend is (na verificatie) stellen we hier passende
-                  gebruikersnamen voor.
+                  {t("studio.profileSettings.suggestions")}
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                Je <strong>weergavenaam</strong> mag je volledige naam zijn. Bezoekers die op je
-                blauwe vinkje klikken zien altijd je echte naam. Zowel{" "}
+                {t("studio.profileSettings.nameHelp")}{" "}
                 <span className="font-mono">
                   rout.be/{normalizeHandle(form.username) || "handle"}
                 </span>{" "}
-                als{" "}
+                {t("studio.profileSettings.and")}{" "}
                 <span className="font-mono">
                   rout.be/u/{normalizeHandle(form.username) || "handle"}
                 </span>{" "}
-                openen hetzelfde profiel — daar hoef je niet tussen te kiezen.{" "}
+                {t("studio.profileSettings.urls")}{" "}
                 <Link to="/verify" className="underline">
-                  Meer over verificatie
+                  {t("studio.profileSettings.learn")}
                 </Link>
                 .
               </p>
             </div>
           </Panel>
 
-          <Panel title="Example profiles" hint="Demo data — how a filled profile list looks.">
+          <Panel title={t("studio.profileSettings.examples")} hint={t("studio.profileSettings.examplesHint")}>
             <ul className="divide-y divide-border border border-border">
               {showcase.map((row) => (
                 <li
@@ -479,7 +477,7 @@ export default function ProfileSettings() {
                       {row.display_name}
                       {row.verified ? (
                         <span className="ml-2 inline-block bg-accent px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-accent-foreground">
-                          verified
+                          {t("studio.profileSettings.verified")}
                         </span>
                       ) : null}
                     </p>
@@ -494,7 +492,7 @@ export default function ProfileSettings() {
               ))}
               {showcase.length === 0 ? (
                 <li className="bg-background p-3 text-xs text-muted-foreground">
-                  No example profiles.
+                  {t("studio.profileSettings.empty")}
                 </li>
               ) : null}
             </ul>
@@ -502,8 +500,8 @@ export default function ProfileSettings() {
         </div>
 
         <Panel
-          title="Reserved handles"
-          hint="These names belong to the platform and can never be claimed."
+          title={t("studio.profileSettings.reserved")}
+          hint={t("studio.profileSettings.reservedHelp")}
           className="h-fit"
         >
           <ul className="flex flex-wrap gap-1.5">
@@ -518,9 +516,9 @@ export default function ProfileSettings() {
             ))}
           </ul>
           <p className="mt-4 text-xs text-muted-foreground">
-            Need one of these for a brand?{" "}
+            {t("studio.profileSettings.contactHelp")}{" "}
             <Link to="/contact" className="underline underline-offset-2">
-              Contact us
+              {t("studio.profileSettings.contact")}
             </Link>
             .
           </p>

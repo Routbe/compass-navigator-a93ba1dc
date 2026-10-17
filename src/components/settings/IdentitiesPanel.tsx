@@ -36,10 +36,10 @@ export function IdentitiesPanel() {
     void load();
     const params = new URLSearchParams(window.location.search);
     const linked = params.get("linked");
-    if (linked) toast.success(`${AUTH_PROVIDERS.find((p) => p.id === linked)?.label ?? linked} is gekoppeld.`);
-    if (params.get("link_error") === "taken") toast.error("Dit account is al gekoppeld aan een ander ROUT-lid.");
+    if (linked) toast.success(t("auth.settings.identities.linked", { name: AUTH_PROVIDERS.find((p) => p.id === linked)?.label ?? linked }));
+    if (params.get("link_error") === "taken") toast.error(t("auth.settings.identities.taken"));
     const error = params.get("error");
-    if (error) toast.error("Koppelen is niet gelukt. Probeer het opnieuw.");
+    if (error) toast.error(t("auth.settings.identities.failed"));
     if (linked || params.get("link_error") || error) {
       params.delete("linked");
       params.delete("link_error");
@@ -69,8 +69,8 @@ export function IdentitiesPanel() {
       if (result?.error) {
         toast.error(
           result.error.status === 400 || result.error.status === 404
-            ? `${provider.label} is nog niet actief.`
-            : result.error.message || "Koppelen is niet gelukt.",
+            ? t("auth.settings.identities.inactive", { name: provider.label })
+            : result.error.message || t("auth.settings.identities.failedShort"),
         );
         return;
       }
@@ -81,10 +81,10 @@ export function IdentitiesPanel() {
       }
       // Never fail silently: no error and no URL means the server returned nothing usable.
       console.error(`[identities] ${provider.id} link returned no authorization URL`, result);
-      toast.error(`${provider.label}: kon de koppel-link niet ophalen. Probeer het opnieuw of contacteer support.`);
+      toast.error(t("auth.settings.identities.urlFailed", { name: provider.label }));
     } catch (error) {
       console.error(`[identities] ${provider.id} link failed`, error);
-      toast.error(`${provider.label}: koppelen is niet gelukt.`);
+      toast.error(t("auth.settings.identities.providerFailed", { name: provider.label }));
     } finally {
       setBusy(null);
     }
@@ -93,7 +93,7 @@ export function IdentitiesPanel() {
   const unlink = async (identityId: string) => {
     const result = await unlinkMyIdentity({ data: { identityId } });
     if (!result.ok) {
-      toast.error(result.reason === "last_method" ? t("oauth.last_method") : "Not found.");
+      toast.error(result.reason === "last_method" ? t("oauth.last_method") : t("auth.settings.identities.notFound"));
       return;
     }
     toast.success(t("oauth.unlink"));
@@ -107,7 +107,7 @@ export function IdentitiesPanel() {
       <div>
         <h2 className="text-lg font-medium">{t("oauth.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Koppel je accounts bij Google, GitHub, GitLab, Mastodon, Bluesky, ROUT ID (onze eigen provider), Infomaniak en Proton. Met elk gekoppeld account kun je inloggen.
+          {t("auth.settings.identities.description")}
         </p>
       </div>
 
@@ -125,13 +125,13 @@ export function IdentitiesPanel() {
                   </span>
                   <span className="min-w-0 flex-1 text-sm text-foreground">{provider.label}</span>
                   <Button variant="outline" size="sm" disabled={busy === provider.id} onClick={() => connect(provider)}>
-                    {busy === provider.id ? <Loader2 className="h-4 w-4 animate-spin" /> : linked.length ? "Nog een koppelen" : "Koppelen"}
+                    {busy === provider.id ? <Loader2 className="h-4 w-4 animate-spin" /> : linked.length ? t("auth.settings.identities.another") : t("auth.settings.identities.connect")}
                   </Button>
                 </div>
                 {linked.map((identity) => (
                   <div key={identity.id} className="ml-11 flex items-center gap-2">
                     <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                      Gekoppeld als {identity.displayName ?? identity.email ?? `${provider.label}-account`}
+                      {t("auth.settings.identities.as", { name: identity.displayName ?? identity.email ?? provider.label })}
                     </span>
                     {(() => {
                       const level = emailTrust({ email: identity.email, emailVerified: true, verifiedBy: [identity.provider] });

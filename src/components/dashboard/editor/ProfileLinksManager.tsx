@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { SocialBlockSettings } from "@/components/studio/SocialBlockSettings";
 import { type Dispatch, type SetStateAction, useRef, useState } from "react";
 import {
@@ -66,6 +67,7 @@ export function ProfileLinksManager({
   onOpenBlockChange,
   onOpenAddDrawer,
 }: ProfileLinksManagerProps) {
+  const { t } = useI18n();
   const dragId = useRef<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
@@ -80,7 +82,8 @@ export function ProfileLinksManager({
       if (!target) return b;
       const next = b.map((x) => (x.id === id ? { ...x, pinned: !target.pinned } : x));
       if (target.pinned) return next;
-      const moved = next.find((x) => x.id === id)!;
+      const moved = next.find((x) => x.id === id);
+      if (!moved) return next;
       return [moved, ...next.filter((x) => x.id !== id)];
     });
 
@@ -93,7 +96,7 @@ export function ProfileLinksManager({
       const file = input.files?.[0];
       if (!file) return;
       if (file.size > 300_000) {
-        toast.error("Kies een afbeelding onder 300 KB.");
+        toast.error(t("studio.links.smallImage"));
         return;
       }
       const reader = new FileReader();
@@ -109,8 +112,8 @@ export function ProfileLinksManager({
       const next = mutate(b);
       if (next === b) return b;
       const before = b;
-      toast("Order changed", {
-        action: { label: "Undo", onClick: () => onBlocksChange(before) },
+      toast(t("studio.links.order"), {
+        action: { label: t("studio.links.undo"), onClick: () => onBlocksChange(before) },
       });
       return next;
     });
@@ -148,16 +151,16 @@ export function ProfileLinksManager({
   return (
     <section className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium">Componenten</h2>
+        <h2 className="text-lg font-medium">{t("studio.links.title")}</h2>
         <span className="text-[11px] text-muted-foreground">
-          {blocks.filter((b) => !b.hidden).length} zichtbaar
+          {t("studio.links.visible", { count: blocks.filter((b) => !b.hidden).length })}
         </span>
       </div>
 
 
       {blocks.length === 0 && (
         <p className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
-          No components yet — add your first social link, header, or custom URL.
+          {t("studio.links.empty")}
         </p>
       )}
 
@@ -217,12 +220,12 @@ export function ProfileLinksManager({
                 >
                   <span className="block truncate text-sm font-medium">{b.label}</span>
                   <span className="block truncate text-[11px] text-muted-foreground">
-                    {section ? b.label : b.value ? blockHref(b) : "Not filled in yet"}
+                    {section ? b.label : b.value ? blockHref(b) : t("studio.links.unfilled")}
                   </span>
                 </button>
                 <button
                   type="button"
-                  aria-label={b.pinned ? "Losmaken" : "Vastzetten bovenaan"}
+                  aria-label={b.pinned ? t("studio.links.unpin") : t("studio.links.pin")}
                   aria-pressed={Boolean(b.pinned)}
                   onClick={() => togglePin(b.id)}
                   className={cn(
@@ -236,12 +239,12 @@ export function ProfileLinksManager({
                 <Switch
                   checked={!b.hidden}
                   onCheckedChange={(on) => patch(b.id, { hidden: !on })}
-                  aria-label={b.hidden ? "Show component" : "Hide component"}
+                  aria-label={b.hidden ? t("studio.links.show") : t("studio.links.hide")}
                   className="shrink-0 data-[state=checked]:bg-emerald-500"
                 />
                 <button
                   type="button"
-                  aria-label="Settings"
+                  aria-label={t("studio.links.settings")}
                   onClick={() => onOpenBlockChange(open ? null : b.id)}
                   className="shrink-0 rounded-lg p-1 text-muted-foreground hover:bg-muted"
                 >
@@ -253,7 +256,7 @@ export function ProfileLinksManager({
                 <div className="mt-3 space-y-2 border-t border-border pt-3">
                   {section ? (
                     <>
-                      <Input aria-label="Titel" value={b.label} maxLength={100} onChange={(e) => patch(b.id, { label: e.target.value })} />
+                      <Input aria-label={t("studio.links.label")} value={b.label} maxLength={100} onChange={(e) => patch(b.id, { label: e.target.value })} />
                       {b.kind === "widget:youtube" && <YouTubeStudioCard />}
                     </>
                   ) : b.kind === "live" ? (
@@ -327,12 +330,11 @@ export function ProfileLinksManager({
                           BLOCK_KINDS.find((k) => k.kind === b.kind)?.placeholder?.replace(
                             /^@/,
                             "",
-                          ) ?? "username"
+                          ) ?? t("studio.links.username")
                         }
                       />
                       <p className="text-[11px] text-muted-foreground">
-                        Enter just your handle — paste a full link and we extract the username
-                        automatically.
+                        {t("studio.links.handleHelp")}
                       </p>
                       <SocialBlockSettings platform={b.kind} handle={b.value} />
                     </>
@@ -356,7 +358,7 @@ export function ProfileLinksManager({
                   )}
                   {isPromoBlock(b.kind) && (
                     <div className="space-y-2 rounded-xl border border-border/60 bg-background p-3">
-                      <p className="text-[11px] font-medium text-foreground">Promo-instellingen</p>
+                      <p className="text-[11px] font-medium text-foreground">{t("studio.links.promo")}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {PROMO_BADGE_PRESETS.map((preset) => (
                           <button
@@ -371,7 +373,7 @@ export function ProfileLinksManager({
                       </div>
                       <Input
                         className="input-field h-9 rounded-xl"
-                        placeholder="Badge (bijv. 🔥 NIEUW)"
+                        placeholder={t("studio.links.badge")}
                         maxLength={32}
                         value={b.badge ?? ""}
                         onChange={(e) => patch(b.id, { badge: e.target.value })}
@@ -379,7 +381,7 @@ export function ProfileLinksManager({
                       <Input
                         type="datetime-local"
                         className="input-field h-9 rounded-xl"
-                        aria-label="Actie loopt tot"
+                        aria-label={t("studio.links.expires")}
                         value={(b.expiresAt ?? "").slice(0, 16)}
                         onChange={(e) =>
                           patch(b.id, {
@@ -404,10 +406,10 @@ export function ProfileLinksManager({
                     </div>
                   )}
                   <div className="space-y-2 rounded-xl border border-border/60 bg-background p-3">
-                    <p className="text-[11px] font-medium text-foreground">Planning & weergave</p>
+                    <p className="text-[11px] font-medium text-foreground">{t("studio.links.schedule")}</p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       <label className="space-y-1 text-[10px] text-muted-foreground">
-                        Zichtbaar vanaf
+                        {t("studio.links.from")}
                         <Input
                           type="datetime-local"
                           className="input-field h-9 rounded-xl"
@@ -422,7 +424,7 @@ export function ProfileLinksManager({
                         />
                       </label>
                       <label className="space-y-1 text-[10px] text-muted-foreground">
-                        Zichtbaar tot
+                        {t("studio.links.until")}
                         <Input
                           type="datetime-local"
                           className="input-field h-9 rounded-xl"
@@ -450,11 +452,11 @@ export function ProfileLinksManager({
                         onClick={() => pickThumbnail(b.id)}
                         className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] hover:bg-muted"
                       >
-                        <ImagePlus className="h-3.5 w-3.5" /> Eigen miniatuur
+                        <ImagePlus className="h-3.5 w-3.5" /> {t("studio.links.thumbnail")}
                       </button>
                       <div
                         role="radiogroup"
-                        aria-label="Icoon voor deze link"
+                        aria-label={t("studio.links.icon")}
                         className="inline-flex overflow-hidden rounded-lg border border-border text-[11px]"
                       >
                         {(["favicon", "globe"] as const).map((mode) => {
@@ -471,7 +473,7 @@ export function ProfileLinksManager({
                                 active ? "bg-foreground text-background" : "hover:bg-muted",
                               )}
                             >
-                              {mode === "favicon" ? "Websitelogo" : "Wereldbol"}
+                              {mode === "favicon" ? t("studio.links.favicon") : t("studio.links.globe")}
                             </button>
                           );
                         })}
@@ -482,7 +484,7 @@ export function ProfileLinksManager({
                           onClick={() => patch(b.id, { thumbnailUrl: "" })}
                           className="rounded-lg px-2 py-1 text-[11px] text-muted-foreground hover:text-destructive"
                         >
-                          Verwijderen
+                          {t("studio.links.remove")}
                         </button>
                       )}
                     </div>
@@ -490,7 +492,7 @@ export function ProfileLinksManager({
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      aria-label="Move up"
+                      aria-label={t("studio.links.up")}
                       disabled={index === 0}
                       onClick={() => move(b.id, -1)}
                       className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30"
@@ -499,7 +501,7 @@ export function ProfileLinksManager({
                     </button>
                     <button
                       type="button"
-                      aria-label="Move down"
+                      aria-label={t("studio.links.down")}
                       disabled={index === blocks.length - 1}
                       onClick={() => move(b.id, 1)}
                       className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30"
@@ -511,7 +513,7 @@ export function ProfileLinksManager({
                       onClick={() => onBlocksChange((x) => x.filter((y) => y.id !== b.id))}
                       className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-destructive"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                      <Trash2 className="h-3.5 w-3.5" /> {t("studio.links.delete")}
                     </button>
                   </div>
                 </div>
