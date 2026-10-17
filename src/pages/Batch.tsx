@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import JSZip from "jszip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,6 +159,7 @@ export default function Batch() {
     setBusy(true);
     setProgress(0);
     try {
+      const { default: JSZip } = await import("jszip");
       const zip = new JSZip();
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, ExternalLink, ImagePlus, KeyRound, Loader2, Lock, Trash2, X } from "lucide-react";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { ImageCropDialog } from "@/components/dashboard/ImageCropDialog";
+const ImageCropDialog = lazy(() => import("@/components/dashboard/ImageCropDialog").then((m) => ({ default: m.ImageCropDialog })));
 import { deleteMyPspKey, getMyTipSetup, saveMyPspKey, saveMyTipSettings, uploadTipImage } from "@/lib/tip-page.functions";
 import { isValidIban } from "@/lib/epc-qr";
 
@@ -186,7 +187,7 @@ export function TipPagePanel() {
             </label>
           )}
         </div>
-        <ImageCropDialog
+        {cropSrc && (<Suspense fallback={null}><ImageCropDialog
           src={cropSrc}
           onCancel={() => setCropSrc(null)}
           onDone={async (blob) => {
@@ -195,7 +196,7 @@ export function TipPagePanel() {
             if (res?.ok) set("imageUrls", [...s.imageUrls, res.url].slice(0, 3));
             else toast.error(res && !res.ok ? res.message : "Upload mislukt");
           }}
-        />
+        /></Suspense>)}
       </section>
 
       <Button onClick={() => void onSave()} disabled={busy || !ibanOk}>
